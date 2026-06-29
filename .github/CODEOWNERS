@@ -1,0 +1,6 @@
+# Code owners for rtk-command-code.
+# Listed owners are automatically requested for review on PRs that touch
+# matching paths. Replace @Coding-Dev-Tools with the maintainer's GitHub
+# username or an org team (e.g. @Coding-Dev-Tools/maintainers) if different.
+
+*       @Coding-Dev-Tools

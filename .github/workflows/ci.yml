@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint install.sh
+        run: bash -n install.sh
+
+      - name: Lint install.ps1
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw install.ps1), [ref]$errors) | Out-Null
+          if ($errors) { $errors | Format-List; exit 1 }
+
+      - name: Validate AGENTS.md @import targets exist
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r ref; do
+            path="${ref#@}"
+            if [ ! -f "$path" ]; then
+              echo "::error file=AGENTS.md::missing @import target: $path"
+              fail=1
+            fi
+          done < <(grep -aoE '^@[A-Za-z0-9._/-]+' AGENTS.md || true)
+          [ "$fail" -eq 0 ] && echo "AGENTS.md @imports OK"
+          exit $fail
+
+      - name: Validate SKILL.md frontmatter and referenced files
+        run: |
+          set -euo pipefail
+          head -1 SKILL.md | grep -qx -- '---' || { echo "SKILL.md: missing frontmatter block"; exit 1; }
+          grep -qE '^name:' SKILL.md        || { echo "SKILL.md: missing required 'name:'"; exit 1; }
+          grep -qE '^description:' SKILL.md || { echo "SKILL.md: missing required 'description:'"; exit 1; }
+          for f in $(grep -aoE 'references/[A-Za-z0-9._/-]+\.md' SKILL.md | sort -u); do
+            [ -f "$f" ] || { echo "SKILL.md: referenced file not found: $f"; exit 1; }
+          done
+          echo "SKILL.md OK"

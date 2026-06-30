@@ -13,7 +13,7 @@ compatibility: >-
   normally if it isn't installed.
 metadata:
   author: Coding-Dev-Tools
-  version: "1.0.0"
+  version: "1.0.1"
   homepage: https://github.com/rtk-ai/rtk
 allowed-tools: Bash(rtk:*) Bash(git:*) Bash(cargo:*) Bash(ls:*) Bash(cat:*) Bash(grep:*) Bash(find:*) Bash(diff:*) Bash(docker:*) Bash(kubectl:*) Bash(gh:*) Bash(glab:*) Bash(pnpm:*) Bash(npm:*) Bash(pip:*) Bash(bundle:*) Bash(ruff:*) Bash(tsc:*) Bash(eslint:*) Bash(pytest:*) Bash(go:*) Bash(jest:*) Bash(vitest:*) Bash(dotnet:*) Bash(aws:*) Bash(psql:*) Bash(prisma:*) Bash(wget:*)
 ---
@@ -68,7 +68,7 @@ remember it — and `|` pipes and `<<` heredocs bypass the rewrite.
 - 🟢 **Compress freely** — large, noisy, low-stakes output you skim:
   `rtk ls`, `rtk git status`, `rtk git log`, `rtk docker ps`, `rtk pip list`.
 - 🟡 **Default mode only** — big runs where you need the failures: `rtk cargo
-  test`, `rtk err <cmd>`. Plain `rtk` keeps errors/diffs — don't add `-u`.
+  test`, `rtk err <cmd>`. Plain `rtk` keeps errors/diffs — don't add `--ultra-compact`.
 - 🔴 **Keep full fidelity (run raw)** — diffs/patches you'll apply, JSON or
   `--format` output you'll parse, secrets, small outputs, and files you'll edit
   (use the native Read tool).
@@ -80,7 +80,7 @@ Full tiered table: [references/commands.md](references/commands.md).
 Use the *least* compression that still answers the question:
 
 ```
-raw / native Read  →  rtk <cmd> (keeps signal, default)  →  -u / -l aggressive / rtk smart (lossy, skim-only)
+raw / native Read  →  rtk <cmd> (keeps signal, default)  →  --ultra-compact / -l aggressive / rtk smart (lossy, skim-only)
 ```
 
 Start as far left as the task needs. Escalate compression only for big, boring
@@ -112,14 +112,30 @@ number. Full reference:
 - **Exit codes.** RTK aims to pass the wrapped command's exit code through, but it
   isn't guaranteed for every command/version. When a pass/fail verdict matters
   (tests, gates), trust the raw exit code or re-run raw / `rtk proxy <cmd>`.
-- **Piped output.** The harness captures stdout as a non-TTY pipe; RTK may still
-  emit icons/decoration ([RTK #1282](https://github.com/rtk-ai/rtk/issues/1282)).
-  For anything you'll parse, run raw; set `NO_COLOR=1` if decoration leaks in.
+- **Piped output can be silently wrong, not just decorated.** On a non-TTY pipe
+  RTK can substitute its compressed summary for the real content — e.g. a
+  redirected `grep` writing a line *count* summary instead of the matching lines
+  ([RTK #1282](https://github.com/rtk-ai/rtk/issues/1282), a correctness bug, not
+  a cosmetic one). Run anything you'll parse or redirect **raw**. Separately, RTK
+  has emitted ANSI color codes into piped/non-TTY output before
+  ([RTK #1409](https://github.com/rtk-ai/rtk/issues/1409), fixed); set
+  `NO_COLOR=1` defensively if you see escape codes leak through.
+- **`-u` is not a working flag.** RTK's own README still lists `-u` as a short
+  form of `--ultra-compact`, but it was removed upstream (it collided with
+  `git push -u`) and isn't restored — using it fails outright
+  ([RTK #2369](https://github.com/rtk-ai/rtk/issues/2369), open). Always use the
+  long form `--ultra-compact`.
 - **Streaming.** RTK buffers to filter, so don't wrap `-f`/follow or growing logs.
 - **PATH.** In a non-interactive shell `rtk` may not be found; the integration
   treats it as optional and falls back to raw commands.
+- **Native tools.** Command Code's built-in file/search tools (Read/Grep/Glob)
+  are lossless, give line numbers, and don't pass through RTK — prefer them over
+  `rtk read/grep/find`.
 - **Permissions.** `rtk` (and `rtk proxy`) can execute arbitrary wrapped commands
   — allow-list it deliberately.
+- **Hooks on Windows.** RTK's filters work on Windows, but its auto-rewrite hook
+  has gaps there ([RTK discussion #671](https://github.com/rtk-ai/rtk/discussions/671));
+  `.ps1` stays CRLF per `.gitattributes`.
 
 ## Prerequisite
 

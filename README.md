@@ -42,8 +42,8 @@ command.
 Two design choices keep it net-positive:
 
 - **Signal-preserving by default.** Plain `rtk <cmd>` keeps errors, stack traces,
-  diff hunks, and exit codes and strips only noise; the lossy modes (`-u` /
-  `--ultra-compact`, `-l aggressive`, `rtk smart`) are opt-in for skimming only —
+  diff hunks, and exit codes and strips only noise; the lossy modes
+  (`--ultra-compact`, `-l aggressive`, `rtk smart`) are opt-in for skimming only —
   never the default. If a command fails or RTK can't parse its output, you get the
   full raw text back (tee fallback).
 - **Measure net, not gross.** `rtk gain` reports gross savings; the goal is *net*
@@ -173,11 +173,20 @@ things to know before relying on it:
   isn't guaranteed for every command/version. **For a pass/fail that matters
   (tests, CI gates), trust the raw exit code** — or run the command raw /
   `rtk proxy`. The tiers keep `rtk cargo test` in *plain* mode, never aggressive.
-- **Piped (non-TTY) output.** A harness captures stdout as a pipe. RTK can still
-  emit icons/decoration there (RTK issue
-  [#1282](https://github.com/rtk-ai/rtk/issues/1282)), which wastes tokens or
-  corrupts parsed output. Run anything you'll parse **raw**, and set `NO_COLOR=1`
-  if decoration leaks in.
+- **Piped (non-TTY) output can be silently wrong, not just decorated.** A harness
+  captures stdout as a pipe; RTK can substitute its compressed summary for the
+  real content there — e.g. a redirected `grep` writing a line-count summary
+  instead of the matching lines (RTK issue
+  [#1282](https://github.com/rtk-ai/rtk/issues/1282), a correctness bug). Run
+  anything you'll parse or redirect **raw**. Separately, RTK has also emitted ANSI
+  color codes into piped output before (RTK issue
+  [#1409](https://github.com/rtk-ai/rtk/issues/1409), fixed) — set `NO_COLOR=1`
+  defensively if you see escape codes leak through.
+- **`-u` is not a working flag.** RTK's own README still documents `-u` as a short
+  form of `--ultra-compact`, but it was removed upstream (it collided with
+  `git push -u`) and was never restored — using it fails outright (RTK issue
+  [#2369](https://github.com/rtk-ai/rtk/issues/2369), open). Always use the long
+  form, `--ultra-compact`.
 - **Streaming / follow.** RTK buffers output to filter it, so `-f`, `tail -f`, or
   a growing log can hang. Run those raw.
 - **PATH.** A non-interactive shell may not find `rtk`; the integration treats it

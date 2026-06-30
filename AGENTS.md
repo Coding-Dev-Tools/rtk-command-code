@@ -33,9 +33,11 @@ When unsure, start raw. Lean context comes from cutting *noise*, not *signal*.
 ## Never default to lossy modes
 
 Plain `rtk <cmd>` keeps the signal — errors, diffs, stack traces, exit codes —
-and strips only noise. `-u` / `--ultra-compact`, `rtk read … -l aggressive`, and `rtk smart`
+and strips only noise. `--ultra-compact`, `rtk read … -l aggressive`, and `rtk smart`
 (2-line summary) are **lossy** — opt-in only for skimming something huge and
-unimportant, never your default.
+unimportant, never your default. (RTK's own docs still mention a `-u` short form
+for `--ultra-compact`; it was removed upstream and doesn't work — use the long
+flag.)
 
 ## Harness safety — don't let it break the tool call
 

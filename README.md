@@ -9,8 +9,11 @@ learns your coding style.
 ## How It Works
 
 Command Code CLI reads `~/.commandcode/AGENTS.md` and injects it into the system
-prompt for every session. This repository provides that AGENTS.md file, teaching
-Command Code to prefix shell commands with `rtk` for automatic output compression.
+prompt for every session. This repository provides that AGENTS.md file (plus a
+loadable skill), teaching Command Code to route **noisy** shell output through
+`rtk` while keeping **full fidelity** for output it needs exactly. The fastest
+setup is RTK's auto-rewrite hook (`rtk init -g`), which rewrites commands for you
+so nothing has to be prefixed by hand.
 
 ```
 Without RTK:                                 With RTK:
@@ -19,6 +22,37 @@ git status (2,000 tokens)                    rtk git status (200 tokens)
 cargo test (25,000 tokens)                   rtk cargo test (2,500 tokens)
 ls -la (800 tokens)                          rtk ls (150 tokens)
 ```
+
+## When RTK helps — and when to keep full fidelity
+
+RTK only pays off when it removes **noise**. This integration is deliberately
+selective:
+
+**Compress (🟢/🟡)** — large, repetitive, low-stakes output you skim: listings,
+`git status` / `log`, dependency installs, container/cluster status, and big
+test/build runs (plain `rtk` keeps the failures and drops the green).
+
+**Keep full fidelity (🔴)** — run the bare command for diffs/patches you'll apply,
+JSON or `--format` output you'll parse, secrets, small outputs, and files you'll
+edit (use the agent's native file tools). Compressing these is exactly what makes
+a tool like this *cost* tokens — the model loses the detail and re-runs the
+command.
+
+Two design choices keep it net-positive:
+
+- **Lossless by default.** Plain `rtk <cmd>` preserves errors, stack traces, diff
+  hunks, and exit codes; the lossy modes (`-u` / `--ultra-compact`, `-l
+  aggressive`, `rtk smart`) are opt-in for skimming only — never the default. On
+  output it can't parse, RTK falls back to the full raw text.
+- **Measure net, not gross.** `rtk gain` reports gross savings; the goal is *net*
+  — savings minus any re-runs and minus the standing cost of these instructions.
+  `rtk gain --failures` and `rtk discover` show where RTK fits and where it
+  doesn't (see [references/analytics.md](references/analytics.md)).
+
+This matters for quality too: every frontier model degrades as irrelevant context
+grows ("context rot" / "lost in the middle"), so cutting genuine noise can *help*
+reasoning — while over-compressing real signal hurts it. The rules above aim for
+the first and avoid the second.
 
 ## Installation
 
@@ -35,6 +69,11 @@ ls -la (800 tokens)                          rtk ls (150 tokens)
 > injected into the system prompt on *every* session. For always-on `rtk`
 > enforcement, install the memory (Method 2); the skill (Method 1) is the
 > quickest install and is enough when you mainly want it during shell-heavy work.
+
+> **Even better — the auto-rewrite hook.** RTK can install a `PreToolUse` hook
+> (`rtk init -g`) that rewrites Bash commands to `rtk` automatically, so the agent
+> never prefixes anything by hand. Pair it with the memory or skill below, which
+> carry the *when-to-compress* rules. See `rtk init --help`.
 
 ### Method 1: Skill (quick install, on-demand)
 
@@ -81,22 +120,24 @@ cp references/analytics.md ~/.commandcode/references/analytics.md
 
 ## What It Teaches the Agent
 
-Once installed, Command Code will automatically use RTK-optimized commands:
+Once installed, Command Code routes **noisy, low-stakes** commands through RTK and
+leaves precise output alone:
 
-| Category | Without RTK | With RTK | Savings |
+| Category | Command | Through RTK? | Est. savings |
 |---|---|---|---|
-| Git | `git status` | `rtk git status` | ~80% |
-| Files | `cat file.rs` | `rtk read file.rs` | ~70% |
-| Search | `grep -r "pattern" .` | `rtk grep "pattern" .` | ~80% |
-| Tests | `cargo test` | `rtk cargo test` | ~90% |
-| Build | `cargo build` | `rtk cargo build` | ~80% |
-| Docker | `docker ps` | `rtk docker ps` | ~80% |
-| GitHub | `gh pr list` | `rtk gh pr list` | ~80% |
+| Status / listings | `rtk git status`, `rtk ls`, `rtk tree` | 🟢 yes | ~80% |
+| Logs / containers | `rtk docker ps`, `rtk log app.log` | 🟢 yes | ~80% |
+| Dependencies | `rtk pip list`, `rtk pnpm list` | 🟢 yes | ~70% |
+| Tests / build | `rtk cargo test`, `rtk err <cmd>` | 🟡 plain mode (keeps failures) | ~90% |
+| Diffs you'll apply | `git diff`, `git show` | 🔴 run raw | — |
+| JSON / parsed output | `… --format json` | 🔴 run raw | — |
+| Files you'll edit | native Read tool | 🔴 not RTK | — |
 
-_Savings are illustrative estimates; actual numbers vary by command and output
-size. Run `rtk gain` to measure your own._
+_Savings are illustrative; actual numbers vary by command and output size. Run
+`rtk gain` to measure your own — and `rtk gain --failures` to spot poor fits._
 
-See [references/commands.md](references/commands.md) for the full list.
+See [references/commands.md](references/commands.md) for the full tiered list and
+[references/analytics.md](references/analytics.md) for measuring net savings.
 
 ## Verify
 
@@ -106,7 +147,10 @@ rtk gain --graph        # Visual savings chart
 ```
 
 After running a few commands through Command Code, `rtk gain` will show the
-accumulated savings.
+accumulated savings. Track **net** savings, not just the headline number:
+`rtk gain --failures` lists commands RTK had to pass through raw (poor fits), and
+`rtk discover` finds new high-value targets. See
+[references/analytics.md](references/analytics.md).
 
 ## Files
 

@@ -1,24 +1,30 @@
-# RTK Analytics
+# RTK Analytics — measure *net* savings, not just gross
 
-Quantify token savings with `rtk gain`, and find more opportunities with
-`rtk discover`. This is the canonical analytics reference (command rewrites
-live in [commands.md](commands.md)).
+`rtk gain` reports **gross** tokens saved. The number that actually matters is
+**net**: gross savings minus (a) tokens spent re-running commands when a
+compressed view hid something, and (b) the standing cost of these instructions in
+context. Optimize for net.
 
-| Command | Description |
+| Command | Use it to |
 |---|---|
-| `rtk gain` | Session summary: tokens saved, efficiency meter |
-| `rtk gain --graph` | ASCII bar chart of daily savings (last 30 days) |
-| `rtk gain --history` | Recent command history with per-command savings |
-| `rtk gain --daily` | Day-by-day breakdown |
-| `rtk gain --weekly` | Weekly breakdown |
-| `rtk gain --monthly` | Monthly breakdown |
-| `rtk gain --all --format json` | JSON export for dashboards |
-| `rtk gain --quota` | Monthly quota savings estimate |
-| `rtk gain --failures` | Commands that bypassed RTK (parse-failure log) |
-| `rtk gain --reset --yes` | Reset all saved-token counters to zero |
-| `rtk discover` | Find commands that could benefit from RTK |
-| `rtk discover --all --since 7` | All projects, last 7 days |
+| `rtk gain` | session summary: tokens saved, efficiency |
+| `rtk gain --graph` | 30-day savings trend |
+| `rtk gain --history` | per-command savings — see where RTK actually pays off |
+| `rtk gain --failures` | commands RTK **couldn't parse** and passed through raw |
+| `rtk discover` | find *good* new opportunities (don't blanket-apply) |
 | `rtk session` | RTK adoption across recent sessions |
+| `rtk gain --all --format json` | export for dashboards (run raw if you'll parse it) |
 
-Run `rtk gain` periodically to quantify actual savings; numbers vary by
-command and output size.
+## Reading the signal
+
+- **High `--history` savings on noisy commands** → working as intended; keep going.
+- **Entries in `--failures`** → RTK fell back to raw output for those, so they
+  aren't saving — and may be a poor fit (structured or edge-case commands). Run
+  them raw and stop wrapping them.
+- **You re-ran a command raw right after its `rtk` version** → that pair was a net
+  *loss*. Note the command type and stop compressing it.
+- **`rtk discover`** surfaces high-volume, noisy commands worth wrapping — a far
+  better guide than wrapping everything by reflex.
+
+Savings vary by command and output size; let `rtk gain` show your real numbers
+rather than assuming the headline 60–90%.

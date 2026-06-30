@@ -4,6 +4,26 @@ All notable changes to this integration are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and this project aims to adhere
 to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] — 2026-06-30
+
+Follow-up accuracy pass after an independent audit against live upstream
+rtk-ai/rtk sources (commits, issues, and the current README).
+
+### Fixed
+- Removed all references to a `-u` short form of `--ultra-compact`. RTK's own
+  README still documents it, but it was removed from the CLI upstream (it
+  collided with `git push -u`) and was never restored — invoking it fails
+  outright (RTK [#2369](https://github.com/rtk-ai/rtk/issues/2369), open).
+  Every reference now uses the working long form, `--ultra-compact`.
+- Corrected the piped-output citation: RTK
+  [#1282](https://github.com/rtk-ai/rtk/issues/1282) is a correctness bug
+  (RTK can silently substitute its compressed summary for the real content on
+  a non-TTY pipe), not an ANSI/decoration issue as previously described. The
+  ANSI-codes-on-pipe claim now cites the correct issue, RTK
+  [#1409](https://github.com/rtk-ai/rtk/issues/1409) (fixed).
+- Synced SKILL.md's "Compatibility & limitations" section with README.md's —
+  it was missing the "Native tools" and "Hooks on Windows" bullets.
+
 ## [1.0.0] — 2026-06-30
 
 First stable release. The integration is now selective, accurate against the real
@@ -31,8 +51,11 @@ RTK command surface, and hardened for agent-harness use.
   trust the raw exit code for pass/fail; prefer native file/search tools; treat
   `rtk` as optional with a raw fallback when it isn't on PATH.
 - **Compatibility & limitations** documentation covering the Command Code hook
-  gap, exit-code fidelity, piped/ANSI behavior (RTK
-  [#1282](https://github.com/rtk-ai/rtk/issues/1282)), streaming, and the
-  permission surface.
+  gap, exit-code fidelity, piped-output correctness (RTK
+  [#1282](https://github.com/rtk-ai/rtk/issues/1282)), ANSI-on-pipe (RTK
+  [#1409](https://github.com/rtk-ai/rtk/issues/1409)), the non-functional `-u`
+  short flag (RTK [#2369](https://github.com/rtk-ai/rtk/issues/2369)),
+  streaming, and the permission surface.
 
+[1.0.1]: https://github.com/Coding-Dev-Tools/rtk-command-code/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Coding-Dev-Tools/rtk-command-code/releases/tag/v1.0.0
